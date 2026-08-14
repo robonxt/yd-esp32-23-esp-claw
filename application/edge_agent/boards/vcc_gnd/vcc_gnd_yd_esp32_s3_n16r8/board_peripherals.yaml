@@ -1,0 +1,5 @@
+version: 1.0.0
+# The YD-ESP32-S3 is a minimal core board. Its header pins are user-assigned;
+# it has no fixed I2C, SPI, I2S, audio, display, camera, or storage wiring.
+# GPIO35-GPIO37 are reserved by the octal flash/PSRAM interface.
+peripherals: []

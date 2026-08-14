@@ -1,0 +1,63 @@
+version: 1.0.0
+# Devices Configuration for VCC-GND Studio YD-ESP32-S3 N16R8
+
+devices:
+  # Onboard WS2812 RGB LED. It is data-driven, not a direct GPIO LED.
+  - name: led_strip
+    chip: ws2812
+    type: led_strip
+    sub_type: rmt
+    version: 1.0.0
+    init_skip: true
+    config:
+      strip_gpio_num: 48
+      max_leds: 1
+      led_model: LED_MODEL_WS2812
+      color_component_format: LED_STRIP_COLOR_COMPONENT_FMT_GRB
+      invert_out: false
+      rmt:
+        clk_src: RMT_CLK_SRC_DEFAULT
+        resolution_hz: 10000000
+        mem_block_symbols: 0
+        with_dma: true
+
+  # BOOT is GPIO0 and is also used to enter the ROM download mode.
+  - name: buttons
+    chip: gpio_button
+    type: custom
+    version: default
+    init_skip: true
+    config:
+      boot_gpio_num: 0
+      active_level: 0
+
+  # The CH343P bridge exposes UART0 on TX/RX header pins.
+  - name: uart0_header
+    chip: header
+    type: custom
+    version: default
+    init_skip: true
+    config:
+      tx_gpio_num: 43
+      rx_gpio_num: 44
+      note: "CH343P UART0 bridge and header pins; firmware console defaults to native USB Serial/JTAG"
+
+  # The separate native USB-C connector is connected directly to the ESP32-S3.
+  - name: usb_serial_jtag
+    chip: esp32s3_native_usb
+    type: custom
+    version: default
+    init_skip: true
+    config:
+      dm_gpio_num: 19
+      dp_gpio_num: 20
+      note: "Native USB Serial/JTAG; GPIO19 is USB D- and GPIO20 is USB D+"
+
+  # Header GPIOs are intentionally not claimed as fixed buses or devices.
+  - name: expansion_header
+    chip: gpio_header
+    type: custom
+    version: default
+    init_skip: true
+    config:
+      note: "User-assigned header GPIOs; GPIO35-GPIO37 are reserved for Octal flash/PSRAM"

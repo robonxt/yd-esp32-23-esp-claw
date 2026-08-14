@@ -1,0 +1,91 @@
+name: Build YD-ESP32-S3 N16R8
+
+on:
+  push:
+    branches: [master, main, yd-board-only]
+  pull_request:
+    paths:
+      - "application/edge_agent/boards/**"
+      - "application/edge_agent/sdkconfig.defaults*"
+      - "application/edge_agent/components/gen_bmgr_codes/**"
+      - ".github/workflows/build-yd-esp32-s3.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: ESP-IDF build
+    runs-on: ubuntu-latest
+    env:
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+    container:
+      image: espressif/idf:release-v5.5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Record commit identifier
+        id: commit
+        run: echo "short_sha=$(git rev-parse --short=7 HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore compiler cache
+        uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ${{ runner.os }}-esp32s3-ccache-${{ hashFiles('application/edge_agent/sdkconfig.defaults*', 'application/edge_agent/boards/vcc_gnd/vcc_gnd_yd_esp32_s3_n16r8/**', 'application/edge_agent/CMakeLists.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-esp32s3-ccache-
+
+      - name: Install board-manager helper
+        run: |
+          . /opt/esp/idf/export.sh
+          python -m pip install --no-cache-dir esp-bmgr-assist
+
+      - name: Generate board-manager configuration
+        working-directory: application/edge_agent
+        run: |
+          . /opt/esp/idf/export.sh
+          idf.py bmgr -c ./boards -b vcc_gnd_yd_esp32_s3_n16r8
+
+      - name: Build firmware
+        working-directory: application/edge_agent
+        run: |
+          . /opt/esp/idf/export.sh
+          idf.py set-target esp32s3
+          idf.py build
+
+      - name: Create merged flash image
+        working-directory: application/edge_agent
+        run: |
+          . /opt/esp/idf/export.sh
+          cd build
+          esptool.py --chip esp32s3 merge_bin \
+            -o yd-esp32-s3-n16r8-${{ steps.commit.outputs.short_sha }}-merged.bin \
+            @flash_args
+
+      - name: Prepare versioned firmware artifacts
+        working-directory: application/edge_agent
+        run: |
+          artifact_dir="build/firmware-artifacts"
+          short_sha="${{ steps.commit.outputs.short_sha }}"
+          mkdir -p "$artifact_dir"
+          cp "build/yd-esp32-s3-n16r8-${short_sha}-merged.bin" "$artifact_dir/yd-esp32-s3-n16r8-${short_sha}-merged.bin"
+          cp build/bootloader/bootloader.bin "$artifact_dir/yd-esp32-s3-n16r8-${short_sha}-bootloader.bin"
+          cp build/partition_table/partition-table.bin "$artifact_dir/yd-esp32-s3-n16r8-${short_sha}-partition-table.bin"
+          cp build/edge_agent.bin "$artifact_dir/yd-esp32-s3-n16r8-${short_sha}-application.bin"
+          cp build/ota_data_initial.bin "$artifact_dir/yd-esp32-s3-n16r8-${short_sha}-ota-data.bin"
+          cp build/storage.bin "$artifact_dir/yd-esp32-s3-n16r8-${short_sha}-storage.bin"
+          cp build/system.bin "$artifact_dir/yd-esp32-s3-n16r8-${short_sha}-system.bin"
+          cp build/edge_agent.elf "$artifact_dir/yd-esp32-s3-n16r8-${short_sha}-application.elf"
+          cp build/edge_agent.map "$artifact_dir/yd-esp32-s3-n16r8-${short_sha}-application.map"
+          cp build/flasher_args.json "$artifact_dir/yd-esp32-s3-n16r8-${short_sha}-flasher-args.json"
+          cp build/flash_args "$artifact_dir/yd-esp32-s3-n16r8-${short_sha}-flash-args"
+          cp build/flash_project_args "$artifact_dir/yd-esp32-s3-n16r8-${short_sha}-flash-project-args"
+          printf '%s\n' "${GITHUB_SHA}" > "$artifact_dir/yd-esp32-s3-n16r8-${short_sha}-commit.txt"
+
+      - name: Upload firmware artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: yd-esp32-s3-n16r8-${{ steps.commit.outputs.short_sha }}-firmware
+          if-no-files-found: error
+          path: application/edge_agent/build/firmware-artifacts

@@ -7,7 +7,7 @@ local arg_schema = require("arg_schema")
 local led_strip = require("led_strip")
 
 -- 2. Constants
-local DEFAULT_IO = 38
+local DEFAULT_IO = 48
 local DEFAULT_LED_COUNT = 1
 local DEFAULT_ENABLED = true
 local DEFAULT_BRIGHTNESS = 255

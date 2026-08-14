@@ -1,0 +1,5 @@
+board: vcc_gnd_yd_esp32_s3_n16r8
+chip: esp32s3
+version: 1.0.0
+description: "VCC-GND Studio YD-ESP32-S3 N16R8 core board with WS2812 RGB LED"
+manufacturer: "VCC-GND Studio"

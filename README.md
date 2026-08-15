@@ -1,3 +1,12 @@
+## Added support for YD-ESP32-23
+
+Added the YD-ESP32-23 board into the built firmware. 
+Changed the default GPIO38 to GPIO48
+
+Below includes the original readme.
+
+
+
 <div align="center">
 
   <a href="https://esp-claw.com/en/">
